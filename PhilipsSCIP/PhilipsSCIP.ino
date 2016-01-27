@@ -10,21 +10,21 @@ int i = 0;
 
 byte requests[][10] = {  
                         {0x06,0x01,0x00,0xA2,0x00,0xA5},
-                        {0x05,0x01,0x00,0x19,0x1D}
+                        {0x05,0x01,0x00,0x19,0x1D},
+                        {0x05,0x01,0x00,0xAD,0xA9},
+                        {0x05,0x01,0x00,0x2F,0x2B},
+                        {0x05,0x01,0x00,0x62,0x66}
                     };
 
 
 byte responses[][10] = {
                         {0x09,0x01,0x01,0xA2,0x31,0x2E,0x38,0x38,0xB4},
-                        {0x06,0x01,0x01,0x19,0x02,0x1D}
-                        
+                        {0x06,0x01,0x01,0x19,0x02,0x1D},
+                        {0x09,0x01,0x01,0xAD,0x06,0x00,0x01,0x00,0xA3},
+                        {0x06,0x01,0x01,0x2F,0x21,0x08},
+                        {0x06,0x01,0x01,0x62,0x04,0x60}
                      };
   
-                     
-
-//byte powerState[] = {0x05,0x01,0x00,0x19,0x1D};
-//byte powerStateResponse[] = {0x06,0x01,0x01,0x19,0x02,0x1D};
-
 int msgLength = 0;
 
 void loop() 
@@ -36,18 +36,18 @@ void loop()
   while(Serial.available() > 0) {
     char c = Serial.read();
     cmdBuffer[i] = c;     // Store the current character
-    debugChar(i,c);
+    //debugChar(i,c);
     //printBuffer(msgBuffer);
     
     if (i!=0 && c==0x01) {
         msgLength = cmdBuffer[i-1];
-        Serial.print("FOUND CTRL MSG WITH LENGTH = "); Serial.println(msgLength);   // if a msg is found with length 5, we are at i=1 and need to continue to i=5-1
+        //Serial.print("FOUND CTRL MSG WITH LENGTH = "); Serial.println(msgLength);   // if a msg is found with length 5, we are at i=1 and need to continue to i=5-1
         //msgBuffer = (byte*) malloc(msgLength * sizeof(byte));
         msgBuffer[0]=msgLength;
         msgBuffer[1]=0x01;
         msgBuffer[2] = '\0';
     } else if (i>0) {
-      Serial.print("Storing "); printHex(c); Serial.print(" into msgBuffer as element "); Serial.println(i);
+      //Serial.print("Storing "); printHex(c); Serial.print(" into msgBuffer as element "); Serial.println(i);
       msgBuffer[i]=c;
       msgBuffer[i+1] = '\0';
     }
@@ -56,14 +56,12 @@ void loop()
         byte expectedChecksum = getCheckSum(msgBuffer,msgLength);
 
         if ((byte)c==(byte)expectedChecksum) {
-          Serial.println("checksum OK");   
-          printBuffer(msgBuffer,msgLength);  
+//          Serial.println("checksum OK");   
+//          printBuffer(msgBuffer,msgLength);  
           sendCorrectResponse(msgBuffer,msgLength);
-          //Serial.print("FoundArray = "); Serial.println(array_cmp(powerState, msgBuffer, msgLength, msgLength));
-          //Serial.write(powerStateResponse, sizeof(powerStateResponse));
           i=-1;     
         } else {
-           Serial.print("checksum NOK : expecting "); printHex(expectedChecksum); Serial.print(" but was "); printHex(c); Serial.println("");
+           //Serial.print("checksum NOK : expecting "); printHex(expectedChecksum); Serial.print(" but was "); printHex(c); Serial.println("");
            i=-1;     
         }
     } 
@@ -89,11 +87,6 @@ void sendCorrectResponse(byte* msgBuffer,int msgLength) {
   int result = -1;
   
   for (int i = 0; i < sizeof(requests) ; i++) {
-    Serial.print("Checking ");
-    printBuffer(msgBuffer,msgLength);
-    Serial.print(" against " );
-    printBuffer(requests[i],msgLength);
-     Serial.println("");
       if (array_cmp(requests[i], msgBuffer, msgLength, msgLength)==true) {
         result = i;
         break;
@@ -101,11 +94,7 @@ void sendCorrectResponse(byte* msgBuffer,int msgLength) {
   }
   
   if (result != -1) {
-     Serial.print("Sending response at "); Serial.print(result); Serial.print(" " );
-     printBuffer(responses[result],msgLength);
-     Serial.println("");
-  } else {
-     Serial.print("Not found");
+    Serial.write(responses[result],responses[result][0]);  // how to get the real size of the array ? got lucky here because size is encoded as first byte.
   }
   
 }
