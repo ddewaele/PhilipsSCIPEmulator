@@ -12,8 +12,8 @@ The emulator
 - calculates the length
 - validates the checksum
 
-![](./images/screenshot1.png)
-![](./images/screenshot2.png)
+![](./docs/screenshot1.png)
+![](./docs/screenshot2.png)
 
 
 The emulator contains 2 byte arrays, one for the supported request commands, and one for the corresponding responses.
