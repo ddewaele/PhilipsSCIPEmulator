@@ -2,6 +2,8 @@ void setup() {
   Serial.begin(9600);
 }
 
+const bool DEBUG = 0;
+
 byte cmdBuffer[100];
 byte msgBuffer[50];
 
@@ -13,7 +15,9 @@ byte requests[][10] = {
                         {0x05,0x01,0x00,0x19,0x1D},
                         {0x05,0x01,0x00,0xAD,0xA9},
                         {0x05,0x01,0x00,0x2F,0x2B},
-                        {0x05,0x01,0x00,0x62,0x66}
+                        {0x05,0x01,0x00,0x62,0x66},
+                        {0x06,0x01,0x00,0x18,0x02,0x1D},
+                        {0x06,0x01,0x00,0x0F,0x02,0x0A}
                     };
 
 
@@ -22,9 +26,14 @@ byte responses[][10] = {
                         {0x06,0x01,0x01,0x19,0x02,0x1D},
                         {0x09,0x01,0x01,0xAD,0x06,0x00,0x01,0x00,0xA3},
                         {0x06,0x01,0x01,0x2F,0x21,0x08},
-                        {0x06,0x01,0x01,0x62,0x04,0x60}
+                        {0x06,0x01,0x01,0x62,0x04,0x60},
+                        {0x06,0x01,0x01,0x00,0x06,0x00},
+                        {0x07,0x01,0x00,0x0F,0x4D,0x00,0x44}
                      };
   
+  
+
+
 int msgLength = 0;
 
 void loop() 
@@ -36,18 +45,17 @@ void loop()
   while(Serial.available() > 0) {
     char c = Serial.read();
     cmdBuffer[i] = c;     // Store the current character
-    //debugChar(i,c);
-    //printBuffer(msgBuffer);
+    if (DEBUG) { debugChar(i,c);  }
+    if (DEBUG) { printBuffer(cmdBuffer,10); Serial.println(""); }
     
     if (i!=0 && c==0x01) {
         msgLength = cmdBuffer[i-1];
-        //Serial.print("FOUND CTRL MSG WITH LENGTH = "); Serial.println(msgLength);   // if a msg is found with length 5, we are at i=1 and need to continue to i=5-1
-        //msgBuffer = (byte*) malloc(msgLength * sizeof(byte));
+        if (DEBUG) { Serial.print("FOUND CTRL MSG WITH LENGTH = "); Serial.println(msgLength); }  // if a msg is found with length 5, we are at i=1 and need to continue to i=5-1
         msgBuffer[0]=msgLength;
         msgBuffer[1]=0x01;
         msgBuffer[2] = '\0';
     } else if (i>0) {
-      //Serial.print("Storing "); printHex(c); Serial.print(" into msgBuffer as element "); Serial.println(i);
+      if (DEBUG) { Serial.print("Storing "); printHex(c); Serial.print(" into msgBuffer as element "); Serial.println(i); }
       msgBuffer[i]=c;
       msgBuffer[i+1] = '\0';
     }
@@ -56,26 +64,14 @@ void loop()
         byte expectedChecksum = getCheckSum(msgBuffer,msgLength);
 
         if ((byte)c==(byte)expectedChecksum) {
-//          Serial.println("checksum OK");   
-//          printBuffer(msgBuffer,msgLength);  
+           if (DEBUG) { Serial.println("checksum OK"); printBuffer(msgBuffer,msgLength);  }
           sendCorrectResponse(msgBuffer,msgLength);
           i=-1;     
         } else {
-           //Serial.print("checksum NOK : expecting "); printHex(expectedChecksum); Serial.print(" but was "); printHex(c); Serial.println("");
+           if (DEBUG) { Serial.print("checksum NOK : expecting "); printHex(expectedChecksum); Serial.print(" but was "); printHex(c); Serial.println(""); }
            i=-1;     
         }
     } 
-    
-//    if (isValidCommand()) {
-//      Serial.println("FOUND VALID CMD");
-//      cmdFound = true;
-//      memset(cmdBuffer, 0, sizeof(cmdBuffer));
-//      i = 0;
-////      Serial.println("");     
-//    } else {
-//      i++;
-//    }
-
 
     i++;
     
@@ -156,13 +152,10 @@ boolean array_cmp(byte *a, byte *b, int len_a, int len_b){
 char getCheckSum(byte *string,int msgLength)
 {
   char XOR = 0;	
-//  Serial.print("CHECKSUM MSG LENGTH = ");
-//  Serial.println(sizeof(string));
+  if (DEBUG) { Serial.print("CHECKSUM MSG LENGTH = "); Serial.println(sizeof(string)); }
   for (int i = 0; i < msgLength-1; i++) 
   {
-//    Serial.print("CHECKSUM BYTE : ");
-//    printHex(string[i]);
-//    Serial.println("");
+    if (DEBUG) { Serial.print("CHECKSUM BYTE : "); printHex(string[i]); Serial.println(""); }
     XOR = XOR ^ string[i];
   }
   return XOR;
